@@ -117,7 +117,7 @@ class BinanceSocketManager(threading.Thread):
         self._conns[path] = connectWS(factory, context_factory)
         return path
 
-    def start_depth_socket(self, symbol, callback, depth=None):
+    def start_depth_socket(self, symbol, callback, depth=None, freq=1000):
         """Start a websocket for symbol market depth returning either a diff or a partial book
 
         https://github.com/binance-exchange/binance-official-api-docs/blob/master/web-socket-streams.md#partial-book-depth-streams
@@ -181,9 +181,15 @@ class BinanceSocketManager(threading.Thread):
             }
 
         """
-        socket_name = symbol.lower() + '@depth'
-        if depth and depth != '1':
-            socket_name = '{}{}'.format(socket_name, depth)
+        if depth:
+            assert(depth in (5, 10, 20)), "If depth is not None, must be one of (5, 10, 20)"
+        assert(freq in (100, 1000)), "freq must be one of (100, 1000)"
+
+        update_speed_string = '' if freq == 1000 else "@100ms"
+        depth_string = depth if depth and depth != 1 else ''
+        socket_name = '{}@depth{}{}'.format(symbol.lower(),
+                                            depth_string,
+                                            update_speed_string)
         return self._start_socket(socket_name, callback)
 
     def start_kline_socket(self, symbol, callback, interval=Client.KLINE_INTERVAL_1MINUTE):
